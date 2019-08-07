@@ -152,12 +152,27 @@ const internalNginx = {
             const locationRendering = async () => {
                 for (let i = 0; i < host.locations.length; i++) {
                     let locationCopy = Object.assign({}, host.locations[i]);
-
+                    
                     if (locationCopy.forward_host.indexOf('/') > -1) {
                         const splitted = locationCopy.forward_host.split('/');
 
                         locationCopy.forward_host = splitted.shift();
                         locationCopy.forward_path = `/${splitted.join('/')}`;
+                    }
+
+                    let adancedConfidCopy = '';
+                    locationCopy.host = '$host';
+                    if (locationCopy.advanced_config !== undefined && locationCopy.advanced_config.length > 0) {
+                        const splitted2 = locationCopy.advanced_config.split('\n')
+                        for (let j=0, jlen = splitted2.length; j < jlen; j++) {
+                            if (splitted2[j].indexOf('Host') > -1) {
+                                let conf = splitted2[j].replace(/[\s]{2,}/,' ').replace(';','')
+                                locationCopy.host = conf.split(/[\s]+/).pop()
+                            } else {
+                                adancedConfidCopy += splitted2[j] + '\n'
+                            }
+                        }
+                        locationCopy.advanced_config = adancedConfidCopy
                     }
 
                     renderedLocations += await renderer.parseAndRender(template, locationCopy);
